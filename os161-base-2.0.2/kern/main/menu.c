@@ -130,13 +130,14 @@ common_prog(int nargs, char **args)
 		proc_destroy(proc);
 		return result;
 	}
+	int status = proc_wait(proc);
 
 	/*
 	 * The new process will be destroyed when the program exits...
 	 * once you write the code for handling that.
 	 */
 
-	return 0;
+	return status;
 }
 #if OPT_MONITOR
 

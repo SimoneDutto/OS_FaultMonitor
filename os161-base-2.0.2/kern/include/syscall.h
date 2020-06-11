@@ -33,6 +33,7 @@
 
 #include <cdefs.h> /* for __DEAD */
 #include "opt-syscalls.h"
+#include "opt-fork.h"
 
 struct trapframe; /* from <machine/trapframe.h> */
 
@@ -64,5 +65,12 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_write(int fd, userptr_t buf_ptr, size_t size);
 int sys_read(int fd, userptr_t buf_ptr, size_t size);
 void sys__exit(int status);
+int sys_waitpid(pid_t pid, userptr_t statusp, int options);
+pid_t sys_getpid(void);
+#if OPT_FORK
+int sys_fork(struct trapframe *ctf, pid_t *retval);
 #endif
+
+#endif
+
 #endif /* _SYSCALL_H_ */
