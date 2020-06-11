@@ -202,17 +202,27 @@ proc_setmonitor(struct proc *proc)
 int  
 proc_fault(void){
 	struct proc *proc = curproc;
+	int fault = 0, monitored = 0, faulty = 0;
 	spinlock_acquire(&proc->p_lock);
-	int fault = 0;
-	if(proc->monitored == 1){
-		if(proc->faulty == 1){
-			kprintf("-----------------------------\n");
+	monitored = proc->monitored;
+	faulty = proc->faulty;
+	if(monitored == 1){
+		if(faulty == 1){
+			kprintf("\n-----------------------------\n");
 			kprintf("Monitored and faulty");
-			kprintf("-----------------------------\n");
+			kprintf("\n-----------------------------\n");
 			//int i = 0;
 			//for(i=0;i<1000;i++);
+			proc->p_status = -200;
 			spinlock_release(&proc->p_lock);
-			as_destroy(proc->p_addrspace);
+		#if USE_SEMAPHORE_FOR_WAITPID
+  			V(proc->p_sem);
+		#else
+  			lock_acquire(proc->p_lock);
+  			cv_signal(proc->p_cv);
+  			lock_release(proc->p_lock);
+		#endif	
+			//as_destroy(proc->p_addrspace);
 			fault = 1;
 		}
 		else{
@@ -227,7 +237,7 @@ proc_fault(void){
 	else{
 		//kprintf("Non monitored");
 	}
-	if(fault == 0) spinlock_release(&proc->p_lock);
+	if(fault==0) spinlock_release(&proc->p_lock);
 	return fault;
 }
 

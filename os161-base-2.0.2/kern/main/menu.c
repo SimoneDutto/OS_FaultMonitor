@@ -161,21 +161,25 @@ monitor_prog(int nargs, char **args)
 {
 	struct proc *proc;
 	int result;
-
-	/* Create a process for the new program to run in. */
-	proc = proc_create_runprogram(args[0] /* name */);
-	if (proc == NULL) {
-		return ENOMEM;
-	}
-	proc_setmonitor(proc);
-	result = thread_fork(args[0] /* thread name */,
-			proc /* new process */,
-			cmd_progthread /* thread function */,
-			args /* thread arg */, nargs /* thread arg */);
-	if (result) {
-		kprintf("thread_fork failed: %s\n", strerror(result));
-		proc_destroy(proc);
-		return result;
+	while(result!=0){
+		/* Create a process for the new program to run in. */
+		proc = proc_create_runprogram(args[0] /* name */);
+		if (proc == NULL) {
+			return ENOMEM;
+		}
+		proc_setmonitor(proc);
+		result = thread_fork(args[0] /* thread name */,
+				proc /* new process */,
+				cmd_progthread /* thread function */,
+				args /* thread arg */, nargs /* thread arg */);
+		if (result) {
+			kprintf("thread_fork failed: %s\n", strerror(result));
+			proc_destroy(proc);
+			return result;
+		}
+		result = proc_wait(proc);
+		int i = 0;
+		for(i=0;i<1000000;i++);
 	}
 
 	/*
