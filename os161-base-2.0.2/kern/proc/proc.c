@@ -65,7 +65,7 @@ static struct _processTable {
  * The process for the kernel; this holds all the kernel-only threads.
  */
 struct proc *kproc;
-static int iter = 0;
+//static int iter = 0;
 /*
  * G.Cabodi - 2019
  * Initialize support for pid/waitpid.
@@ -225,18 +225,22 @@ proc_fault(void){
 			//as_destroy(proc->p_addrspace);
 			fault = 1;
 		}
+		/* To test  monitored 
 		else{
-			//kprintf("Monitored and not faulty");
+			kprintf("Monitored and not faulty");
 			iter++;
 			if(iter > 100){
 				proc->faulty=1;
 				iter = 0;
 			}
 		}
+		*/
 	}
+	/*
 	else{
 		//kprintf("Non monitored");
 	}
+	*/
 	if(fault==0) spinlock_release(&proc->p_lock);
 	return fault;
 }

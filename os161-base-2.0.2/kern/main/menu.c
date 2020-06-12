@@ -183,7 +183,8 @@ monitor_prog(int nargs, char **args)
 		}
 		result = proc_wait(proc);
 		monitor_removeproc(proc);
-		proc_destroy(proc);
+		
+
 		int i = 0;
 		for(i=0;i<1000000;i++);
 	}
