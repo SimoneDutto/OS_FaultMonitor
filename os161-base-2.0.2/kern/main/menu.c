@@ -41,6 +41,8 @@
 #include <sfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <monitor.h>
+
 #include "opt-sfs.h"
 #include "opt-net.h"
 #include "opt-monitor.h"
@@ -160,7 +162,8 @@ int
 monitor_prog(int nargs, char **args)
 {
 	struct proc *proc;
-	int result;
+	int result;	
+
 	while(result!=0){
 		/* Create a process for the new program to run in. */
 		proc = proc_create_runprogram(args[0] /* name */);
@@ -168,6 +171,7 @@ monitor_prog(int nargs, char **args)
 			return ENOMEM;
 		}
 		proc_setmonitor(proc);
+		monitor_addproc(proc);
 		result = thread_fork(args[0] /* thread name */,
 				proc /* new process */,
 				cmd_progthread /* thread function */,
@@ -178,6 +182,8 @@ monitor_prog(int nargs, char **args)
 			return result;
 		}
 		result = proc_wait(proc);
+		monitor_removeproc(proc);
+		proc_destroy(proc);
 		int i = 0;
 		for(i=0;i<1000000;i++);
 	}
@@ -793,7 +799,9 @@ void
 menu(char *args)
 {
 	char buf[64];
-
+#if OPT_MONITOR
+	monitor_start();
+#endif	
 	menu_execute(args, 1);
 
 	while (1) {

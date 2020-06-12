@@ -388,6 +388,7 @@ defoption hello
 optfile hello main/hello.c
 
 defoption monitor
+optfile monitor proc/monitor.c
 defoption syscalls 
 optfile syscalls syscall/proc_syscalls.c
 optfile syscalls syscall/file_syscalls.c
