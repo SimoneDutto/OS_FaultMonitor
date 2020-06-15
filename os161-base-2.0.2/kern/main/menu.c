@@ -170,7 +170,7 @@ monitor_prog(int nargs, char **args)
 		if (proc == NULL) {
 			return ENOMEM;
 		}
-		proc_setmonitor(proc);
+		proc_setmonitor(proc, 0);
 		monitor_addproc(proc);
 		result = thread_fork(args[0] /* thread name */,
 				proc /* new process */,
@@ -801,7 +801,10 @@ menu(char *args)
 {
 	char buf[64];
 #if OPT_MONITOR
-	monitor_start();
+	
+	if(monitor_start()){
+		kprintf("Monitor thread failed to start\n");
+	}
 #endif	
 	menu_execute(args, 1);
 

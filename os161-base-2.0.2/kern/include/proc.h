@@ -100,6 +100,7 @@ struct proc {
 #if OPT_MONITOR
 	unsigned monitored;             /* Flag if the process must be monitored */
 	unsigned faulty;		/* Flag to signal if a process incurred into a fault*/
+	unsigned bin;
 #endif
 };
 
@@ -137,7 +138,7 @@ void proc_file_table_copy(struct proc *psrc, struct proc *pdest);
 #endif
 
 #if OPT_MONITOR
-void proc_setmonitor(struct proc *proc);
+void proc_setmonitor(struct proc *proc, unsigned int bin);
 int proc_fault(void);
 #endif
 

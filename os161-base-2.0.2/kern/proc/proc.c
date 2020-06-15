@@ -191,11 +191,12 @@ proc_create(const char *name)
 
 #if OPT_MONITOR
 void 
-proc_setmonitor(struct proc *proc)
+proc_setmonitor(struct proc *proc, unsigned int bin)
 {
 
 	spinlock_acquire(&proc->p_lock);
 	proc->monitored=1;
+	proc->bin=bin;
 	spinlock_release(&proc->p_lock);
 	return;
 }
