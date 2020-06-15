@@ -37,8 +37,11 @@
  */
 
 #include <spinlock.h>
+#include <limits.h>
+
 #include "opt-waitpid.h"
 #include "opt-monitor.h"
+#include "opt-file.h"
 
 struct addrspace;
 struct thread;
@@ -91,6 +94,9 @@ struct proc {
         struct lock *p_lock;
 #endif
 #endif
+#if OPT_FILE
+        struct openfile *fileTable[OPEN_MAX];
+#endif
 #if OPT_MONITOR
 	unsigned monitored;             /* Flag if the process must be monitored */
 	unsigned faulty;		/* Flag to signal if a process incurred into a fault*/
@@ -125,6 +131,10 @@ struct addrspace *proc_setas(struct addrspace *);
 int proc_wait(struct proc *proc);
 /* get proc from pid */
 struct proc *proc_search_pid(pid_t pid);
+void proc_signal_end(struct proc *proc);
+#if OPT_FILE
+void proc_file_table_copy(struct proc *psrc, struct proc *pdest);
+#endif
 
 #if OPT_MONITOR
 void proc_setmonitor(struct proc *proc);

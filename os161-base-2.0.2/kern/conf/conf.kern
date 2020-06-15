@@ -395,6 +395,7 @@ optfile syscalls syscall/file_syscalls.c
 defoption synch
 defoption waitpid
 defoption fork
+defoption file
 ########################################
 #                                      #
 #             Filesystems              #

@@ -34,6 +34,7 @@
 #include <cdefs.h> /* for __DEAD */
 #include "opt-syscalls.h"
 #include "opt-fork.h"
+#include "opt-file.h"
 
 struct trapframe; /* from <machine/trapframe.h> */
 
@@ -62,6 +63,12 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 #if OPT_SYSCALLS
+#if OPT_FILE
+struct openfile;
+void openfileIncrRefCount(struct openfile *of);
+int sys_open(userptr_t path, int openflags, mode_t mode, int *errp);
+int sys_close(int fd);
+#endif
 int sys_write(int fd, userptr_t buf_ptr, size_t size);
 int sys_read(int fd, userptr_t buf_ptr, size_t size);
 void sys__exit(int status);

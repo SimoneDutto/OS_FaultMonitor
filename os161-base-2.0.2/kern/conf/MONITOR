@@ -35,3 +35,4 @@ options monitor 		# Options to create monitor thread
 options syscalls		# Add syscalls
 options synch			# Add wait_channel/synch functions
 options waitpid			# Add waitPid support
+options file 			# Sys call to read/write file

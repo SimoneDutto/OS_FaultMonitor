@@ -29,13 +29,7 @@ sys__exit(int status)
   struct proc *p = curproc;
   p->p_status = status & 0xff; /* just lower 8 bits returned */
   proc_remthread(curthread);
-#if USE_SEMAPHORE_FOR_WAITPID
-  V(p->p_sem);
-#else
-  lock_acquire(p->p_lock);
-  cv_signal(p->p_cv);
-  lock_release(p->p_lock);
-#endif
+  proc_signal_end(p);
 #else
   /* get address space of current process and destroy */
   struct addrspace *as = proc_getas();
@@ -107,6 +101,8 @@ int sys_fork(struct trapframe *ctf, pid_t *retval) {
     proc_destroy(newp); 
     return ENOMEM; 
   }
+
+  proc_file_table_copy(newp,curproc);
 
   /* we need a copy of the parent's trapframe */
   tf_child = kmalloc(sizeof(struct trapframe));
