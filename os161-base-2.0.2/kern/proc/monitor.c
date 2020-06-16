@@ -37,6 +37,7 @@ static struct _monitor{
         struct spinlock lk;
 } monitor;
 
+/* Always running thread, when scheduled control the monitored process to evaluate faultyness */
 static
 void monitor_check(void *ptr, unsigned long nargs){
 	ptr = (void *) ptr;
@@ -67,6 +68,7 @@ void monitor_check(void *ptr, unsigned long nargs){
 	}
 }
 
+/* Fake driver to retrieve HW features */
 int evaluate_features(void){
 	struct iovec iov;
   	struct uio ku;
@@ -74,12 +76,13 @@ int evaluate_features(void){
   	struct vnode *vn;
   	struct dsfile *of;
   	void *kbuf;
-	unsigned int features[20];
+	unsigned int features[19];
 	int i=0, j=0, flag=1;
 	
 	of = &ds_files[0];
 	vn = of->v;
 	char feature[10];
+	char lett;
 
 	while(flag){
 		kbuf = kmalloc(1);
@@ -88,19 +91,28 @@ int evaluate_features(void){
   		if (result) {
    			return 0;
   		}
-		char* lett = (char *) kbuf;
-		feature[j]=lett[0];
+		lett = ((char *) kbuf)[0];
+		feature[j]=lett;
 		j++;
-		if(strcmp(lett,",")==0){
+		if(lett==','){
 			feature[j]='\0';
 			features[i] = atoi(feature);
 			j=0;
 			i++;
 		}
+		if(lett=='\n'){
+			feature[j]='\0';
+			features[i] = atoi(feature);
+			flag=0;
+		}
 		of->offset++;
 		kfree(kbuf);
 	}
-	kprintf("%u first feature\n",features[0]);	
+	return elaborate_data(features);
+}
+
+int elaborate_data(unsigned int *features){
+	features = (unsigned int *) features;
 	return 0;
 }
 
@@ -110,7 +122,7 @@ int monitor_start(void){
 	monitor.active=1;
 	monitor.last_i=0;
 	char args[20]="dummy";
-	
+	// Open fake driver files
 	int result = vfs_open((char *) ds_names[0], O_RDONLY, 0, &v);
   	if (result) {
     		return -1;
