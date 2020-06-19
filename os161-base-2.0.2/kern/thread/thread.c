@@ -514,8 +514,6 @@ thread_fork(const char *name,
 	/*
 	 * Now we clone various fields from the parent thread.
 	 */
-
-	/* Thread subsystem fields */
 	newthread->t_cpu = curthread->t_cpu;
 
 	/* Attach the new thread to its process */
@@ -545,6 +543,68 @@ thread_fork(const char *name,
 	return 0;
 }
 
+#if OPT_MONITOR
+
+int
+thread_fork_tocpu(const char *name,
+	    struct proc *proc,
+	    void (*entrypoint)(void *data1, unsigned long data2),
+	    void *data1, unsigned long data2)
+{
+	struct thread *newthread;
+	int result;
+	struct cpu *c;
+	unsigned numcpus;
+
+	newthread = thread_create(name);
+	if (newthread == NULL) {
+		return ENOMEM;
+	}
+
+	/* Allocate a stack */
+	newthread->t_stack = kmalloc(STACK_SIZE);
+	if (newthread->t_stack == NULL) {
+		thread_destroy(newthread);
+		return ENOMEM;
+	}
+	thread_checkstack_init(newthread);
+
+	/*
+	 * Now we clone various fields from the parent thread.
+	 */
+
+	
+	numcpus = cpuarray_num(&allcpus);
+	c = cpuarray_get(&allcpus, numcpus-1);
+	newthread->t_cpu = c; 	
+
+	/* Attach the new thread to its process */
+	if (proc == NULL) {
+		proc = curthread->t_proc;
+	}
+	result = proc_addthread(proc, newthread);
+	if (result) {
+		/* thread_destroy will clean up the stack */
+		thread_destroy(newthread);
+		return result;
+	}
+
+	/*
+	 * Because new threads come out holding the cpu runqueue lock
+	 * (see notes at bottom of thread_switch), we need to account
+	 * for the spllower() that will be done releasing it.
+	 */
+	newthread->t_iplhigh_count++;
+
+	/* Set up the switchframe so entrypoint() gets called */
+	switchframe_init(newthread, entrypoint, data1, data2);
+
+	/* Lock the current cpu's run queue and make the new thread runnable */
+	thread_make_runnable(newthread, false);
+
+	return 0;
+}
+#endif
 /*
  * High level, machine-independent context switch code.
  *
@@ -722,6 +782,7 @@ thread_switch(threadstate_t newstate, struct wchan *wc, struct spinlock *lk)
 	/* Turn interrupts back on. */
 	splx(spl);
 #if OPT_MONITOR
+	
 	int fault = proc_fault();
 
 	if(fault){

@@ -175,7 +175,7 @@ main(void)
 {
 	char *start, *end;
 
-	printf("Welcome to the palindrome tester!\n");
+	printf("Welcome to the palindrome tester by Simone!\n");
 	printf("I will take a large palindrome and test it.\n");
 	printf("Here it is:\n");
 	printf("%s\n", palindrome);

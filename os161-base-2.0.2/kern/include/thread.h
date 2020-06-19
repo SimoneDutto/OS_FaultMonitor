@@ -39,7 +39,7 @@
 #include <array.h>
 #include <spinlock.h>
 #include <threadlist.h>
-
+#include "opt-monitor.h"
 struct cpu;
 
 /* get machine-dependent defs */
@@ -144,6 +144,13 @@ int thread_fork(const char *name, struct proc *proc,
                 void (*func)(void *, unsigned long),
                 void *data1, unsigned long data2);
 
+
+#if OPT_MONITOR
+int thread_fork_tocpu(const char *name, struct proc *proc,
+                void (*func)(void *, unsigned long),
+                void *data1, unsigned long data2);
+
+#endif
 /*
  * Cause the current thread to exit.
  * Interrupts need not be disabled.

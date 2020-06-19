@@ -123,7 +123,7 @@ common_prog(int nargs, char **args)
 		return ENOMEM;
 	}
 
-	result = thread_fork(args[0] /* thread name */,
+	result = thread_fork_tocpu(args[0] /* thread name */,
 			proc /* new process */,
 			cmd_progthread /* thread function */,
 			args /* thread arg */, nargs /* thread arg */);
@@ -172,7 +172,7 @@ monitor_prog(int nargs, char **args)
 		}
 		proc_setmonitor(proc, 0);
 		monitor_addproc(proc);
-		result = thread_fork(args[0] /* thread name */,
+		result = thread_fork_tocpu(args[0] /* thread name */,
 				proc /* new process */,
 				cmd_progthread /* thread function */,
 				args /* thread arg */, nargs /* thread arg */);

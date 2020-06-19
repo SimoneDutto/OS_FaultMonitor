@@ -34,6 +34,7 @@ static struct _monitor{
         int active;
         struct proc *proc[MAX_PROC+1];  
         int last_i;
+	int  count;
         struct spinlock lk;
 } monitor;
 
@@ -45,7 +46,7 @@ void monitor_check(void *ptr, unsigned long nargs){
 	
 	while(1){
 		int i = 0;
-		while(i < monitor.last_i){
+		while(i < monitor.last_i && monitor.count != 0){
 			spinlock_acquire(&monitor.lk);
 			struct proc* p = monitor.proc[i];
 			spinlock_release(&monitor.lk);
@@ -54,7 +55,8 @@ void monitor_check(void *ptr, unsigned long nargs){
 				continue;
 			}
 			evaluate_features();
-			uint32_t n = random()%10000;	
+			//uint32_t n = random()%10000;	
+			uint32_t n = 1;
 			if(n == 1){
 				spinlock_acquire(&p->p_lock);
 				p->faulty = 1;
@@ -62,7 +64,6 @@ void monitor_check(void *ptr, unsigned long nargs){
 				n = 0;
 			}
 			i++;
-			//kprintf("Ciao sono il thread di controllo\n");
 		}
 		thread_yield();		
 	}
@@ -121,6 +122,7 @@ int monitor_start(void){
 	spinlock_init(&monitor.lk);
 	monitor.active=1;
 	monitor.last_i=0;
+	monitor.count=0;
 	char args[20]="dummy";
 	// Open fake driver files
 	int result = vfs_open((char *) ds_names[0], O_RDONLY, 0, &v);
@@ -150,6 +152,7 @@ int monitor_addproc(struct proc* proc){
     		if (monitor.proc[i] == NULL) {
       			monitor.proc[i] = proc;
 	      		monitor.last_i = i+1;
+			monitor.count++;
       			break;
     		}
     		i++;
@@ -163,6 +166,7 @@ int monitor_removeproc(struct proc* p){
 	for(i=0;i<MAX_PROC+1;i++){
 		if(monitor.proc[i] == p){
 			monitor.proc[i] = NULL;
+			monitor.count--;
 			break;
 		}
 	
