@@ -1,1 +1,0 @@
-cmd_/home/sgundo/Desktop/Tesi/OS161_FaultMonitor/kernel_module/hello-1.mod := { echo  /home/sgundo/Desktop/Tesi/OS161_FaultMonitor/kernel_module/hello-1.o; echo; } > /home/sgundo/Desktop/Tesi/OS161_FaultMonitor/kernel_module/hello-1.mod

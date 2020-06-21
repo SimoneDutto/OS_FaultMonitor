@@ -22,3 +22,6 @@ void cleanup_module(void)
 {
     printk(KERN_INFO "Goodbye world 1.\n");
 }
+
+
+
