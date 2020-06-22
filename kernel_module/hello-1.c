@@ -1,6 +1,9 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/workqueue.h>
+#include <linux/pid.h>
+#include <linux/sched.h>
+#include <linux/sched/task.h>
 
 static void mykmod_work_handler(struct work_struct *w);
 
@@ -11,9 +14,16 @@ static unsigned long onesec;
 static void
 mykmod_work_handler(struct work_struct *w)
 {
+	struct task_struct *tsk;
         pr_info("mykmod work %u jiffies\n", (unsigned)onesec);
+	
+	read_lock(&tasklist_lock);
+	tsk = pid_task(find_vpid(12345), PIDTYPE_PID);
+	if(tsk == NULL)
+		pr_info("No process with this PID");
+	pr_info("Ciao");
+	read_unlock(&tasklist_lock);
 }
-
 
 int init_module(void)
 {
