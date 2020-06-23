@@ -16,6 +16,8 @@
 /*
 This code is taken by Aby Sam Ross
 github:  https://github.com/abysamross/simple-linux-kernel-tcp-client-server/
+This is used to send features to be evaluated to a python socket server
+NOTE: I could have sent information through device file, but it is easier to decouple features sending and evaluation in this way, having in mind in the future the actual evaluator could be placed on another host over the internet
 */
 int tcp_client_send(struct socket *sock, const char *buf, const size_t length,\
                 unsigned long flags);
@@ -38,6 +40,7 @@ static u32 create_address(u8 *ip)
         }
         return addr;
 }
+
 
 
 void tcp_sendf_waitr(struct work_struct *work){

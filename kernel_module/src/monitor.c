@@ -8,6 +8,7 @@
 #include <linux/slab.h>
 
 #include "../include/connt.h"
+#include "../include/m_pfile.h"
 
 MODULE_AUTHOR("Simone Dutto");
 MODULE_DESCRIPTION("module to evaluate faulty proc");
@@ -45,13 +46,15 @@ proc_eval_handler(struct work_struct *w)
 	INIT_WORK(&feat->work, tcp_sendf_waitr);
 	queue_work(tcp_q, &feat->work); 
 	
-	queue_delayed_work(proc_q, &proc_work, onesec);
+	//queue_delayed_work(proc_q, &proc_work, onesec);
 }
 
 int init_module(void)
 {
         onesec = msecs_to_jiffies(1000);
         pr_info("Monitor loaded\n");
+        if(pfile_init())
+        	pr_info("Device not registered\n");
 	if(tcp_client_connect())
 		pr_info("No connected to server\n");
 		
@@ -62,13 +65,14 @@ int init_module(void)
         return 0;
 }
 
+
+
 void cleanup_module(void)
 {
-        
 	cancel_delayed_work_sync(&proc_work);
         destroy_workqueue(proc_q);
         destroy_workqueue(tcp_q);
-			
+	pfile_cleanup();		
         pr_info("monitor exit\n");
 }
 
