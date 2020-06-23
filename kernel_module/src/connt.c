@@ -13,6 +13,10 @@
 #include "../include/connt.h"
 #define PORT 2325
 
+/*
+This code is taken by Aby Sam Ross
+github:  https://github.com/abysamross/simple-linux-kernel-tcp-client-server/
+*/
 int tcp_client_send(struct socket *sock, const char *buf, const size_t length,\
                 unsigned long flags);
 int tcp_client_receive(struct socket *sock, char *str,\
@@ -36,45 +40,34 @@ static u32 create_address(u8 *ip)
 }
 
 
-int tcp_sendf_waitr(int *features){
-	const int len = 49;
-        
-        char response[len+1];
-        char reply[len+1];
-        
+void tcp_sendf_waitr(struct work_struct *work){
+        unsigned int pid=0;
+        char response[50+1];
+        char reply[50+1];
         DECLARE_WAIT_QUEUE_HEAD(recv_wait);
         
-        memset(&reply, 0, len+1);
+        struct features_info *ft = container_of(work, struct features_info, work);
+        pid = ft->pid;
+        
+        pr_info("PID calling: %d", pid);
+        memset(&reply, 0, +1);
         strcat(reply, "HOLA"); 
         tcp_client_send(conn_socket, reply, strlen(reply), MSG_DONTWAIT);
 
-
+	
         wait_event_timeout(recv_wait,\
                         !skb_queue_empty(&conn_socket->sk->sk_receive_queue),\
                                                                         5*HZ);
-        /*
-        add_wait_queue(&conn_socket->sk->sk_wq->wait, &recv_wait);
-        while(1)
-        {
-                __set_current_status(TASK_INTERRUPTIBLE);
-                schedule_timeout(HZ);
-        */
-                if(!skb_queue_empty(&conn_socket->sk->sk_receive_queue))
-                {
-                        /*
-                        __set_current_status(TASK_RUNNING);
-                        remove_wait_queue(&conn_socket->sk->sk_wq->wait,\
-                                                              &recv_wait);
-                        */
-                        memset(&response, 0, len+1);
-                        tcp_client_receive(conn_socket, response, MSG_DONTWAIT);
-                        //break;
-                }
+        
+	if(!skb_queue_empty(&conn_socket->sk->sk_receive_queue))
+	{
+		memset(&response, 0, 50+1);
+		tcp_client_receive(conn_socket, response, MSG_DONTWAIT);
+		
+	}
 
-        /*
-        }
-        */
-        return -1;
+        kfree(ft);
+        return;
 }
 
 int tcp_client_connect(void)

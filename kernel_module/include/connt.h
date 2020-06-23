@@ -2,6 +2,12 @@
 #define _CONNT_H
 
 int tcp_client_connect(void);
-int tcp_sendf_waitr(int *features);
+void tcp_sendf_waitr(struct work_struct *w);
+
+struct features_info{
+	unsigned int pid;
+	unsigned int *features;
+	struct work_struct work;
+};
 
 #endif
