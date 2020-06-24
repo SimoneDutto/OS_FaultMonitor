@@ -11,6 +11,7 @@
 #include <linux/slab.h>
 
 #include "../include/connt.h"
+#include "../include/pid_cache.h"
 #define PORT 2325
 
 /*
@@ -45,16 +46,16 @@ static u32 create_address(u8 *ip)
 
 void tcp_sendf_waitr(struct work_struct *work){
         unsigned int pid=0;
-        char response[50+1];
-        char reply[50+1];
+        char response[8];
+        char reply[8];
         DECLARE_WAIT_QUEUE_HEAD(recv_wait);
         
         struct features_info *ft = container_of(work, struct features_info, work);
         pid = ft->pid;
         
-        pr_info("PID calling: %d", pid);
-        memset(&reply, 0, +1);
-        strcat(reply, "HOLA"); 
+        pr_info("PID calling: %u", pid);
+        memset(&reply, 0, 8);
+        sprintf(reply,"%d", pid);
         tcp_client_send(conn_socket, reply, strlen(reply), MSG_DONTWAIT);
 
 	
@@ -64,9 +65,10 @@ void tcp_sendf_waitr(struct work_struct *work){
         
 	if(!skb_queue_empty(&conn_socket->sk->sk_receive_queue))
 	{
-		memset(&response, 0, 50+1);
+		memset(&response, 0, 4);
 		tcp_client_receive(conn_socket, response, MSG_DONTWAIT);
-		
+		if(response[0]=='0')
+			cache_add(pid);
 	}
 
         kfree(ft);

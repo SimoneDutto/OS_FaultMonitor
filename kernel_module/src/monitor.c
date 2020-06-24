@@ -9,6 +9,7 @@
 
 #include "../include/connt.h"
 #include "../include/m_pfile.h"
+#include "../include/pid_cache.h"
 
 MODULE_AUTHOR("Simone Dutto");
 MODULE_DESCRIPTION("module to evaluate faulty proc");
@@ -18,7 +19,7 @@ static void proc_eval_handler(struct work_struct *w);
 
 static struct workqueue_struct *proc_q = 0;
 static struct workqueue_struct *tcp_q = 0;
-static DECLARE_DELAYED_WORK(proc_work, proc_eval_handler);
+DECLARE_DELAYED_WORK(proc_work, proc_eval_handler);
 //static DECLARE_WORK(tcp_work, tcp_sendf_waitr);
 static unsigned long onesec;
 static unsigned int *features = {0};
@@ -28,9 +29,10 @@ proc_eval_handler(struct work_struct *w)
 {
 	struct task_struct *tsk;
 	struct features_info *feat;
-        int pid = 2031;
+        unsigned int pid = 0;
         pr_info("proc evaluation\n");
-	
+        pid = cache_head();
+	//e extract the task from task list: proof of concept to extract info given the PID
 	rcu_read_lock();
 	tsk = pid_task(find_vpid(pid), PIDTYPE_PID);
 	rcu_read_unlock();
@@ -38,15 +40,13 @@ proc_eval_handler(struct work_struct *w)
 		pr_info("No process with this PID");
 	pr_info("Found the process");
 	
-	// access to feature vectore
+	// access to features vector before sending info to socket handler
 	feat = kzalloc(sizeof(*feat), GFP_KERNEL);
 	feat->features = features;
-	feat->pid = 1;
-	
+	feat->pid = pid;
+	// queue a socket work, 
 	INIT_WORK(&feat->work, tcp_sendf_waitr);
-	queue_work(tcp_q, &feat->work); 
-	
-	//queue_delayed_work(proc_q, &proc_work, onesec);
+	queue_work(tcp_q, &feat->work);
 }
 
 int init_module(void)
@@ -60,7 +60,6 @@ int init_module(void)
 		
         proc_q = create_singlethread_workqueue("proc_eval");
         tcp_q = create_singlethread_workqueue("tcp_queue");
-        queue_delayed_work(proc_q, &proc_work, onesec);
 
         return 0;
 }
@@ -74,6 +73,10 @@ void cleanup_module(void)
         destroy_workqueue(tcp_q);
 	pfile_cleanup();		
         pr_info("monitor exit\n");
+}
+
+void add_work_queue(void){
+	queue_delayed_work(proc_q, &proc_work, onesec);
 }
 
 

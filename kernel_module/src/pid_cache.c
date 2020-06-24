@@ -5,6 +5,7 @@
 #include <asm/errno.h>
 
 #include "../include/pid_cache.h"
+#include "../include/monitor.h"
 
 /*
 	Code take by kernel.org
@@ -44,6 +45,20 @@ static void __cache_delete(struct object *obj)
 }
 
 /* Must be holding cache_lock */
+static unsigned int __cache_head(void)
+{
+	struct object *obj = NULL;
+	unsigned int PID;
+        obj = list_first_entry(&cache, struct object, list);
+        BUG_ON(!obj);
+        PID = obj->id;
+        list_del(&obj->list);
+        kfree(obj);
+        cache_num--;
+        return PID;
+}
+
+/* Must be holding cache_lock */
 static void __cache_add(struct object *obj)
 {
         list_add(&obj->list, &cache);
@@ -57,6 +72,7 @@ static void __cache_add(struct object *obj)
                 __cache_delete(outcast);
         }
         */
+        
 }
 
 int cache_add(unsigned int id)
@@ -71,6 +87,7 @@ int cache_add(unsigned int id)
         mutex_lock(&cache_lock);
         __cache_add(obj);
         mutex_unlock(&cache_lock);
+        add_work_queue();
         return 0;
 }
 
@@ -93,4 +110,13 @@ int cache_find(unsigned int id)
         }
         mutex_unlock(&cache_lock);
         return ret;
+}
+
+unsigned int cache_head(void){
+	unsigned int PID;
+	mutex_lock(&cache_lock);
+        PID = __cache_head();
+        mutex_unlock(&cache_lock);
+        return PID;
+	
 }

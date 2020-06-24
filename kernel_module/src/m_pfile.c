@@ -32,6 +32,7 @@ static int open(struct inode *inode, struct  file *file)
 {
 	return single_open(file, show, NULL);
 }
+// sudo bash -c "/usr/bin/echo 1234 > /proc/monitor" to try
 
 static ssize_t write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *ppos)
