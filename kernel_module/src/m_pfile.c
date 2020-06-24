@@ -6,7 +6,7 @@
 #include <linux/uaccess.h>
 
 #include "../include/m_pfile.h"
-#include "../include/pid_cache.h"
+#include "../include/f_list.h"
 
 
 #define PROCFS_MAX_SIZE		1024
@@ -43,7 +43,7 @@ static ssize_t write(struct file *file,
 	if (ret)
 		return ret;
 	pr_info("PID to signal: %u", PID);
-	cache_add(PID);
+	f_list_add(PID, NULL);
 	return count;
 }
 

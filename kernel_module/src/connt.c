@@ -9,9 +9,10 @@
 #include <asm/uaccess.h>
 #include <linux/socket.h>
 #include <linux/slab.h>
+#include <linux/sched/signal.h>
 
 #include "../include/connt.h"
-#include "../include/pid_cache.h"
+#include "../include/f_list.h"
 #define PORT 2325
 
 /*
@@ -46,12 +47,14 @@ static u32 create_address(u8 *ip)
 
 void tcp_sendf_waitr(struct work_struct *work){
         unsigned int pid=0;
+        unsigned int *feat;
         char response[8];
         char reply[8];
         DECLARE_WAIT_QUEUE_HEAD(recv_wait);
         
         struct features_info *ft = container_of(work, struct features_info, work);
         pid = ft->pid;
+        feat = ft->features;
         
         pr_info("PID calling: %u", pid);
         memset(&reply, 0, 8);
@@ -68,7 +71,11 @@ void tcp_sendf_waitr(struct work_struct *work){
 		memset(&response, 0, 4);
 		tcp_client_receive(conn_socket, response, MSG_DONTWAIT);
 		if(response[0]=='0')
-			cache_add(pid);
+			f_list_add(pid, feat);
+		else{
+			pr_info("Proc %u faulty, sending kill message", pid);
+			kill_pid(find_vpid(pid), SIGKILL, 1);
+		}
 	}
 
         kfree(ft);
@@ -116,6 +123,13 @@ int tcp_client_connect(void)
 
 err:
         return -1;
+}
+
+void tcp_client_disconnect(void){
+	if(conn_socket != NULL)
+        {
+                sock_release(conn_socket);
+        }
 }
 
 int tcp_client_send(struct socket *sock, const char *buf, const size_t length,\

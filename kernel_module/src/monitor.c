@@ -9,7 +9,7 @@
 
 #include "../include/connt.h"
 #include "../include/m_pfile.h"
-#include "../include/pid_cache.h"
+#include "../include/f_list.h"
 
 MODULE_AUTHOR("Simone Dutto");
 MODULE_DESCRIPTION("module to evaluate faulty proc");
@@ -19,6 +19,7 @@ static void proc_eval_handler(struct work_struct *w);
 
 static struct workqueue_struct *proc_q = 0;
 static struct workqueue_struct *tcp_q = 0;
+static struct workqueue_struct *ft_q = 0;
 DECLARE_DELAYED_WORK(proc_work, proc_eval_handler);
 //static DECLARE_WORK(tcp_work, tcp_sendf_waitr);
 static unsigned long onesec;
@@ -31,7 +32,7 @@ proc_eval_handler(struct work_struct *w)
 	struct features_info *feat;
         unsigned int pid = 0;
         pr_info("proc evaluation\n");
-        pid = cache_head();
+        pid = f_list_head();
 	//e extract the task from task list: proof of concept to extract info given the PID
 	rcu_read_lock();
 	tsk = pid_task(find_vpid(pid), PIDTYPE_PID);
@@ -57,7 +58,7 @@ int init_module(void)
         	pr_info("Device not registered\n");
 	if(tcp_client_connect())
 		pr_info("No connected to server\n");
-		
+	f_list_init();	
         proc_q = create_singlethread_workqueue("proc_eval");
         tcp_q = create_singlethread_workqueue("tcp_queue");
 
@@ -71,6 +72,7 @@ void cleanup_module(void)
 	cancel_delayed_work_sync(&proc_work);
         destroy_workqueue(proc_q);
         destroy_workqueue(tcp_q);
+        tcp_client_disconnect();
 	pfile_cleanup();		
         pr_info("monitor exit\n");
 }
