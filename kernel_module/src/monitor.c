@@ -16,11 +16,13 @@ MODULE_DESCRIPTION("module to evaluate faulty proc");
 MODULE_LICENSE("GPL");
 
 static void proc_eval_handler(struct work_struct *w);
+static void feat_updater(struct work_struct *w);
 
 static struct workqueue_struct *proc_q = 0;
 static struct workqueue_struct *tcp_q = 0;
 static struct workqueue_struct *ft_q = 0;
 DECLARE_DELAYED_WORK(proc_work, proc_eval_handler);
+DECLARE_DELAYED_WORK(ft_work, feat_updater);
 //static DECLARE_WORK(tcp_work, tcp_sendf_waitr);
 static unsigned long onesec;
 static unsigned int *features = {0};
@@ -50,6 +52,16 @@ proc_eval_handler(struct work_struct *w)
 	queue_work(tcp_q, &feat->work);
 }
 
+
+static void feat_updater(struct work_struct *w){
+	if(f_list_updater())
+		pr_err("Updater failed to update\n");
+		
+	queue_delayed_work(ft_q, &ft_work, onesec/2);
+}
+
+
+
 int init_module(void)
 {
         onesec = msecs_to_jiffies(1000);
@@ -61,6 +73,8 @@ int init_module(void)
 	f_list_init();	
         proc_q = create_singlethread_workqueue("proc_eval");
         tcp_q = create_singlethread_workqueue("tcp_queue");
+        ft_q = create_singlethread_workqueue("f_queue");
+        queue_delayed_work(ft_q, &ft_work, onesec/2);
 
         return 0;
 }
@@ -72,6 +86,7 @@ void cleanup_module(void)
 	cancel_delayed_work_sync(&proc_work);
         destroy_workqueue(proc_q);
         destroy_workqueue(tcp_q);
+        destroy_workqueue(ft_q);
         tcp_client_disconnect();
 	pfile_cleanup();		
         pr_info("monitor exit\n");
@@ -80,5 +95,6 @@ void cleanup_module(void)
 void add_work_queue(void){
 	queue_delayed_work(proc_q, &proc_work, onesec);
 }
+
 
 

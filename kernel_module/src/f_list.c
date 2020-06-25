@@ -3,6 +3,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
+#include <linux/random.h>
 #include <asm/errno.h>
 
 #include "../include/f_list.h"
@@ -11,7 +12,7 @@
 /*
 	Code take by github/jinb-park
 */
-
+#define NUM 20
 struct features
 {
         struct list_head list;
@@ -26,43 +27,68 @@ static unsigned int f_list_num = 0;
 #define MAX_f_list_SIZE 10
 
 
-int list_change_feature(unsigned int pid, unsigned int *new_feat){
+
+static unsigned int* get_randoms(unsigned int id){
+	int i = 0;
+	unsigned int *fts = NULL;
+	
+	fts = kzalloc(NUM*sizeof(unsigned int), GFP_KERNEL);
+	if(fts == NULL) return NULL;
+	
+	for(i=0;i<NUM;i++){
+		get_random_bytes(&fts[i], sizeof(unsigned int));
+	}
+	
+	return fts;
+}
+
+/**
+*  Routine to update features: exploit RCU list to being able to update features without
+*  affecting the evaluation thread
+*
+**/
+int f_list_updater(void){
 	struct features *f = NULL;
 	struct features *new_f = NULL;
 	struct features *old_f = NULL;
+	unsigned int * new_feat;
+	int finish = 0, init=0;
 	/**
 	 * updater
 	 *
 	 * (updater) require that alloc new node & copy, update new node & reclaim old node
 	 * list_replace_rcu() is used to do that.
 	*/
-	rcu_read_lock();
-
-	list_for_each_entry(f, &f_list, list) {
-		if(f->id == pid) {
-			old_f = f;
-			break;
+	while(!finish){
+		new_feat = get_randoms(f->id);
+		if(!new_feat) return -1;
+		
+		rcu_read_lock();
+		if(!init) 
+			old_f = list_first_or_null_rcu(&f_list, struct features, list);
+		else 
+			old_f = list_next_or_null_rcu(&f_list, &new_f->list, \
+							struct features, list);
+		if(old_f == NULL){
+			finish = 1;
+			rcu_read_unlock();
+			continue;
 		}
-	}
-
-	if(!old_f) {
+		
+		new_f = kzalloc(sizeof(struct features), GFP_ATOMIC);
+		if(!new_f) {
+			rcu_read_unlock();
+			return -1;
+		}
+		memcpy(new_f, old_f, sizeof(struct features));
+		new_f->features = new_feat;
+		spin_lock(&list_lock);
+		list_replace_rcu(&old_f->list, &new_f->list);
+		spin_unlock(&list_lock);
 		rcu_read_unlock();
-		return -1;
+		synchronize_rcu();
+		kfree(old_f);
 	}
-	new_f = kzalloc(sizeof(struct features), GFP_ATOMIC);
-	if(!new_f) {
-		rcu_read_unlock();
-		return -1;
-	}
-	memcpy(new_f, old_f, sizeof(struct features));
-	new_f->features = new_feat;
-	spin_lock(&list_lock);
-	list_replace_rcu(&old_f->list, &new_f->list);
-	spin_unlock(&list_lock);
-
-	rcu_read_unlock();
-	synchronize_rcu();
-	kfree(old_f);
 	
 	return 0;
 
@@ -107,7 +133,11 @@ void f_list_delete(unsigned int id)
 
 unsigned int f_list_head(void){
 	unsigned int PID=0;
-	
+	struct features* f;
+	rcu_read_lock();
+	f = list_first_or_null_rcu(&f_list, struct features, list);
+	PID = f->id;
+	rcu_read_unlock();
         return PID;
 	
 }

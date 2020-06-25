@@ -74,6 +74,7 @@ void tcp_sendf_waitr(struct work_struct *work){
 			f_list_add(pid, feat);
 		else{
 			pr_info("Proc %u faulty, sending kill message", pid);
+			kfree(feat);
 			kill_pid(find_vpid(pid), SIGKILL, 1);
 		}
 	}
