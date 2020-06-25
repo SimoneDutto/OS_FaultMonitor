@@ -13,17 +13,12 @@
 	Code take by github/jinb-park
 */
 #define NUM 20
-struct features
-{
-        struct list_head list;
-        unsigned int id;
-        unsigned int *features;
-};
+
 
 /* Protects the f_list, f_list_num, and the featuress within it */
 spinlock_t list_lock;
 static LIST_HEAD(f_list);
-static unsigned int f_list_num = 0;
+//static unsigned int f_list_num = 0;
 #define MAX_f_list_SIZE 10
 
 
@@ -131,14 +126,24 @@ void f_list_delete(unsigned int id)
 	pr_err("not exist book\n");
 }
 
-unsigned int f_list_head(void){
-	unsigned int PID=0;
-	struct features* f;
+struct features * f_list_head(void){
+	struct features* old_f=NULL, *new_f=NULL;
 	rcu_read_lock();
-	f = list_first_or_null_rcu(&f_list, struct features, list);
-	PID = f->id;
+	old_f = list_first_or_null_rcu(&f_list, struct features, list);
+	if(old_f == NULL) return NULL;
+	new_f = kzalloc(sizeof(*new_f), GFP_ATOMIC);
+	if(!new_f) {
+		rcu_read_unlock();
+		return NULL;
+	}
+	memcpy(new_f, old_f, sizeof(struct features));
+	spin_lock(&list_lock);
+	list_del_rcu(&old_f->list);
+	spin_unlock(&list_lock);
 	rcu_read_unlock();
-        return PID;
+	synchronize_rcu();
+	kfree(old_f);
+        return new_f;
 	
 }
 

@@ -57,6 +57,7 @@ void tcp_sendf_waitr(struct work_struct *work){
         feat = ft->features;
         
         pr_info("PID calling: %u", pid);
+        pr_info("feat[0]: %u", feat[0]);
         memset(&reply, 0, 8);
         sprintf(reply,"%d", pid);
         tcp_client_send(conn_socket, reply, strlen(reply), MSG_DONTWAIT);
@@ -121,6 +122,8 @@ int tcp_client_connect(void)
                         "socket. | setup_connection *** \n", ret);
                 goto err;
         }
+        
+        return 0;
 
 err:
         return -1;

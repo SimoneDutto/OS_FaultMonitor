@@ -10,6 +10,7 @@
 #include "../include/connt.h"
 #include "../include/m_pfile.h"
 #include "../include/f_list.h"
+#include "../include/monitor.h"
 
 MODULE_AUTHOR("Simone Dutto");
 MODULE_DESCRIPTION("module to evaluate faulty proc");
@@ -25,38 +26,31 @@ DECLARE_DELAYED_WORK(proc_work, proc_eval_handler);
 DECLARE_DELAYED_WORK(ft_work, feat_updater);
 //static DECLARE_WORK(tcp_work, tcp_sendf_waitr);
 static unsigned long onesec;
-static unsigned int *features = {0};
 
 static void
 proc_eval_handler(struct work_struct *w)
 {
-	struct task_struct *tsk;
 	struct features_info *feat;
-        unsigned int pid = 0;
+	struct features *f;
+        
         pr_info("proc evaluation\n");
-        pid = f_list_head();
-	//e extract the task from task list: proof of concept to extract info given the PID
-	rcu_read_lock();
-	tsk = pid_task(find_vpid(pid), PIDTYPE_PID);
-	rcu_read_unlock();
-	if(tsk == NULL)
-		pr_info("No process with this PID");
-	pr_info("Found the process");
-	
+	f = f_list_head(); //extract one from queue
+	if(f==NULL) add_work_queue(); // test if it's effective
 	// access to features vector before sending info to socket handler
 	feat = kzalloc(sizeof(*feat), GFP_KERNEL);
-	feat->features = features;
-	feat->pid = pid;
+	feat->features = f->features;
+	feat->pid = f->id;
 	// queue a socket work, 
 	INIT_WORK(&feat->work, tcp_sendf_waitr);
 	queue_work(tcp_q, &feat->work);
+	kfree(f);
 }
 
 
 static void feat_updater(struct work_struct *w){
 	if(f_list_updater())
 		pr_err("Updater failed to update\n");
-		
+	pr_info("Updater successful");
 	queue_delayed_work(ft_q, &ft_work, onesec/2);
 }
 
@@ -84,6 +78,7 @@ int init_module(void)
 void cleanup_module(void)
 {
 	cancel_delayed_work_sync(&proc_work);
+	cancel_delayed_work_sync(&ft_work);
         destroy_workqueue(proc_q);
         destroy_workqueue(tcp_q);
         destroy_workqueue(ft_q);
