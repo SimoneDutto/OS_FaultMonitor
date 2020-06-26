@@ -3,6 +3,7 @@
 import socket
 import torch
 import torch.nn as nn
+import numpy as np 
 
 PATH= "model_NN50_20.pth"
 len_index = 20
@@ -30,23 +31,24 @@ class BinaryClassification(nn.Module):
         x = self.classifier(x)
         return x
 
-def eval():
+def eval(feat):
+        X = np.array(feat)
+        X = torch.from_numpy(X).float()
+        X = X.unsqueeze(0)
         y = model(X)
         y = torch.log_softmax(y, dim=1)
         _, y = torch.max(y, dim = 1)   
-        print("Result: "+str(y))
     	
-        return y
+        return y.item()
 
 
 model = BinaryClassification()
 model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
 model.eval()
-
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 2325        # Port to listen on (non-privileged ports are > 1023)
 i = 0
-num_feat = 1
+num_feat = 19
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen()
@@ -57,22 +59,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             i = 0
             feat = list()
             for i in range(0, num_feat):
-            	
             	data = conn.recv(4)
-            	
-            	num = int(data)
-            	print (num)
+            	num = int.from_bytes(data, byteorder='little', signed=False)
             	feat.append(num)
             
-            
-            print (num)
             if not data:
                 break
                 
-            result = eval();
-            if i == 0:
-            	conn.sendall(b+str(result))
-            	i = 1
+            result = eval(feat);
+            if result == 0:
+            	conn.sendall(b"0")
+            	print("Sent not fault valuation")
             else:
-            	conn.sendall(b+str(result))
-            	i = 0
+            	conn.sendall(b"1")
+            	print("Sent fault valuation")

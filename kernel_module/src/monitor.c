@@ -50,7 +50,6 @@ proc_eval_handler(struct work_struct *w)
 static void feat_updater(struct work_struct *w){
 	if(f_list_updater())
 		pr_err("Updater failed to update\n");
-	pr_info("Updater successful");
 	queue_delayed_work(ft_q, &ft_work, onesec/2);
 }
 

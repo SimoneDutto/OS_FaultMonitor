@@ -24,7 +24,7 @@ NOTE: I could have sent information through device file, but it is easier to dec
 int tcp_client_send(struct socket *sock, const char *buf, const size_t length,\
                 unsigned long flags);
 int tcp_client_receive(struct socket *sock, char *str,\
-                        unsigned long flags);
+                        unsigned long flags, int size);
 
 static struct socket *conn_socket = NULL;
 
@@ -46,32 +46,31 @@ static u32 create_address(u8 *ip)
 
 
 void tcp_sendf_waitr(struct work_struct *work){
-        unsigned int pid=0;
+        unsigned int pid=0, len=19, i;
         unsigned int *feat;
-        char response[8];
-        char reply[8];
+        char response[1];
+        char reply[4];
         DECLARE_WAIT_QUEUE_HEAD(recv_wait);
         
         struct features_info *ft = container_of(work, struct features_info, work);
         pid = ft->pid;
         feat = ft->features;
         
-        pr_info("PID calling: %u", pid);
-        pr_info("feat[0]: %u", feat[0]);
-        memset(&reply, 0, 4);
-        memcpy(reply, &feat[0], 4);
-        sprintf(reply,"%d", pid);
-        tcp_client_send(conn_socket, reply, 4, MSG_DONTWAIT);
-
-	
+        for(i=0;i < len;i++){
+		memset(&reply, 0, 4);
+	        memcpy(reply, &feat[i], 4);
+	        //sprintf(reply,"%d", pid);
+	        tcp_client_send(conn_socket, reply, 4, MSG_DONTWAIT);        
+        }
+        
         wait_event_timeout(recv_wait,\
                         !skb_queue_empty(&conn_socket->sk->sk_receive_queue),\
                                                                         5*HZ);
         
 	if(!skb_queue_empty(&conn_socket->sk->sk_receive_queue))
 	{
-		memset(&response, 0, 4);
-		tcp_client_receive(conn_socket, response, MSG_DONTWAIT);
+		memset(&response, 0, 1);
+		tcp_client_receive(conn_socket, response, MSG_DONTWAIT, 1);
 		if(response[0]=='0')
 			f_list_add(pid, feat);
 		else{
@@ -182,14 +181,13 @@ repeat_send:
 }
 
 int tcp_client_receive(struct socket *sock, char *str,\
-                        unsigned long flags)
+                        unsigned long flags, int size)
 {
         //mm_segment_t oldmm;
         struct msghdr msg;
         //struct iovec iov;
         struct kvec vec;
         int len;
-        int max_size = 50;
 
         msg.msg_name    = 0;
         msg.msg_namelen = 0;
@@ -204,13 +202,13 @@ int tcp_client_receive(struct socket *sock, char *str,\
         msg.msg_iov->iov_base   = str;
         msg.msg_ioc->iov_len    = max_size; 
         */
-        vec.iov_len = max_size;
+        vec.iov_len = size;
         vec.iov_base = str;
 
         //oldmm = get_fs(); set_fs(KERNEL_DS);
 read_again:
         //len = sock_recvmsg(sock, &msg, max_size, 0); 
-        len = kernel_recvmsg(sock, &msg, &vec, max_size, max_size, flags);
+        len = kernel_recvmsg(sock, &msg, &vec, size, size, flags);
 
         if(len == -EAGAIN || len == -ERESTARTSYS)
         {
@@ -221,7 +219,7 @@ read_again:
         }
 
 
-        pr_info(" *** mtp | the server says: %s | tcp_client_receive *** \n", str);
+        pr_info(" *** mtp | the server says: %c | tcp_client_receive *** \n", str[0]);
         //set_fs(oldmm);
         return len;
 }
