@@ -58,9 +58,10 @@ void tcp_sendf_waitr(struct work_struct *work){
         
         pr_info("PID calling: %u", pid);
         pr_info("feat[0]: %u", feat[0]);
-        memset(&reply, 0, 8);
+        memset(&reply, 0, 4);
+        memcpy(reply, &feat[0], 4);
         sprintf(reply,"%d", pid);
-        tcp_client_send(conn_socket, reply, strlen(reply), MSG_DONTWAIT);
+        tcp_client_send(conn_socket, reply, 4, MSG_DONTWAIT);
 
 	
         wait_event_timeout(recv_wait,\
