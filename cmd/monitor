@@ -1,0 +1,19 @@
+#!/bin/sh
+# Command line utility to start a program and signal PID to kernel monitor
+cmd=""
+i="0"
+for var in "$@"
+do
+    if [ $i = "0" ];
+    then
+    	i="1"
+    	var="$(pwd)/${var}" 
+    fi
+    cmd="${cmd} ${var}"
+     
+done
+
+eval $cmd &
+echo $!
+
+/usr/bin/echo $! > /proc/monitor
