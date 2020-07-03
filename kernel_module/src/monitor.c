@@ -35,11 +35,15 @@ proc_eval_handler(struct work_struct *w)
         
         pr_info("proc evaluation\n");
 	f = f_list_head(); //extract one from queue
-	if(f==NULL) add_work_queue(); // test if it's effective
+	if(f==NULL) {
+		add_work_queue(); // test if it's effective
+		return;
+	}
 	// access to features vector before sending info to socket handler
 	feat = kzalloc(sizeof(*feat), GFP_KERNEL);
 	feat->features = f->features;
 	feat->pid = f->id;
+	feat->bin = f->bin;
 	// queue a socket work, 
 	INIT_WORK(&feat->work, tcp_sendf_waitr);
 	queue_work(tcp_q, &feat->work);
@@ -50,7 +54,7 @@ proc_eval_handler(struct work_struct *w)
 static void feat_updater(struct work_struct *w){
 	if(f_list_updater())
 		pr_err("Updater failed to update\n");
-	queue_delayed_work(ft_q, &ft_work, onesec/2);
+	//queue_delayed_work(ft_q, &ft_work, onesec/2);
 }
 
 
@@ -67,7 +71,7 @@ int init_module(void)
         proc_q = create_singlethread_workqueue("proc_eval");
         tcp_q = create_singlethread_workqueue("tcp_queue");
         ft_q = create_singlethread_workqueue("f_queue");
-        queue_delayed_work(ft_q, &ft_work, onesec/2);
+        //queue_delayed_work(ft_q, &ft_work, onesec/2);
 
         return 0;
 }
@@ -88,6 +92,7 @@ void cleanup_module(void)
 
 void add_work_queue(void){
 	queue_delayed_work(proc_q, &proc_work, onesec);
+	queue_delayed_work(ft_q, &ft_work, onesec/2);
 }
 
 

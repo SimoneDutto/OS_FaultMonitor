@@ -7,6 +7,7 @@ void tcp_sendf_waitr(struct work_struct *w);
 
 struct features_info{
 	unsigned int pid;
+	unsigned int bin;
 	unsigned int *features;
 	struct work_struct work;
 };

@@ -58,14 +58,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         while True:
             i = 0
             feat = list()
-            for i in range(0, num_feat):
-            	data = conn.recv(4)
-            	num = int.from_bytes(data, byteorder='little', signed=False)
-            	feat.append(num)
+            for i in range(0, num_feat+1):
+                data = conn.recv(4)
+                num = int.from_bytes(data, byteorder='little', signed=False)
+                if i==0:
+                    bina=num
+                    continue
+                feat.append(num)
             
             if not data:
                 break
-                
+            print("Evaluate process bin: "+str(bina))
             result = eval(feat);
             if result == 0:
             	conn.sendall(b"0")

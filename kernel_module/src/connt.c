@@ -46,7 +46,7 @@ static u32 create_address(u8 *ip)
 
 
 void tcp_sendf_waitr(struct work_struct *work){
-        unsigned int pid=0, len=19, i;
+        unsigned int pid=0, bin=0, len=19, i;
         unsigned int *feat;
         char response[1];
         char reply[4];
@@ -54,7 +54,13 @@ void tcp_sendf_waitr(struct work_struct *work){
         
         struct features_info *ft = container_of(work, struct features_info, work);
         pid = ft->pid;
+	bin= ft->bin;
         feat = ft->features;
+
+	memset(&reply, 0, 4);
+        memcpy(reply, &bin, 4);
+        //sprintf(reply,"%d", pid);
+        tcp_client_send(conn_socket, reply, 4, MSG_DONTWAIT); 	
         
         for(i=0;i < len;i++){
 		memset(&reply, 0, 4);
@@ -72,7 +78,7 @@ void tcp_sendf_waitr(struct work_struct *work){
 		memset(&response, 0, 1);
 		tcp_client_receive(conn_socket, response, MSG_DONTWAIT, 1);
 		if(response[0]=='0')
-			f_list_add(pid, feat);
+			f_list_add(pid,bin, feat);
 		else{
 			pr_info("Proc %u faulty, sending kill message", pid);
 			kfree(feat);

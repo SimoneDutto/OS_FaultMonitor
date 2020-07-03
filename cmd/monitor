@@ -1,7 +1,33 @@
-#!/bin/sh
+#!/bin/bash
 # Command line utility to start a program and signal PID to kernel monitor
 cmd=""
 i="0"
+
+while getopts ":b:" opt; do
+  case ${opt} in
+    b )
+      target=$OPTARG
+      if [ "$target" == "bitcount" ];then
+				bin=0
+			elif [ "$target" == "basicmath" ];then
+				bin=1
+			elif [ "$target" =="qsort" ];then
+				bin=2
+			else
+				bin=-1
+			fi
+      ;;
+    \? )
+      echo "Invalid option: $OPTARG" 1>&2
+      ;;
+    : )
+      echo "Invalid option: $OPTARG requires an argument" 1>&2
+      ;;
+  esac
+done
+
+shift $((OPTIND -1))
+
 for var in "$@"
 do
     if [ $i = "0" ];
@@ -12,8 +38,9 @@ do
     cmd="${cmd} ${var}"
      
 done
-
-eval $cmd &
-echo $!
-
-/usr/bin/echo $! > /proc/monitor
+echo "comando lanciato $cmd"
+nohup $cmd &
+pid=$!
+echo $pid
+echo "monitor lanciato"
+echo "$pid $bin" > /proc/monitor

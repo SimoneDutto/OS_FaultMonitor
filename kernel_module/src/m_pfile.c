@@ -37,13 +37,15 @@ static int open(struct inode *inode, struct  file *file)
 static ssize_t write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *ppos)
 {
-	long ret;
-	unsigned int PID;
-	ret = kstrtouint_from_user(buffer, count, 10, &PID);
-	if (ret)
-		return ret;
-	pr_info("PID to signal: %u", PID);
-	f_list_add(PID, NULL);
+	unsigned int PID, bin;
+	char cmd[50];
+	//ret = kstrtouint_from_user(buffer, count, 10, &PID);
+	if(copy_from_user(cmd, buffer, 50) ||sscanf(cmd,"%u %u", &PID, &bin)!=2){
+		return -EINVAL;
+	}
+	
+	pr_info("PID to signal: %u %u", PID, bin);
+	f_list_add(PID, bin, NULL);
 	return count;
 }
 
@@ -58,7 +60,7 @@ static const struct file_operations fops = {
 
 int pfile_init(void)
 {
-	proc_create(filename, 0, NULL, &fops);
+	proc_create(filename, 0666, NULL, &fops);
 	return 0;
 }
 

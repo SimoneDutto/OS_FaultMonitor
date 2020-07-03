@@ -89,7 +89,7 @@ int f_list_updater(void){
 
 }
 
-int f_list_add(unsigned int id, unsigned int *feat)
+int f_list_add(unsigned int id, unsigned int bin, unsigned int *feat)
 {
         struct features *obj;
 
@@ -97,6 +97,7 @@ int f_list_add(unsigned int id, unsigned int *feat)
                 return -ENOMEM;
 
         obj->id = id;
+	obj->bin = bin;
         obj->features = feat;
         
         spin_lock(&list_lock);
