@@ -32,28 +32,31 @@ proc_eval_handler(struct work_struct *w)
 {
 	struct features_info *feat;
 	struct features *f;
-        
+        int flag = 0;
         pr_info("proc evaluation\n");
-	f = f_list_head(); //extract one from queue
-	if(f==NULL) {
-		add_work_queue(); // test if it's effective
-		return;
+        while(flag!=1){
+		f = f_list_head(); //extract one from queue
+		if(f==NULL) {
+			flag=1;
+			break;
+		}
+		// access to features vector before sending info to socket handler
+		feat = kzalloc(sizeof(*feat), GFP_KERNEL);
+		feat->features = f->features;
+		feat->pid = f->id;
+		feat->bin = f->bin;
+		// queue a socket work, 
+		INIT_WORK(&feat->work, tcp_sendf_waitr);
+		queue_work(tcp_q, &feat->work);
+		kfree(f);
 	}
-	// access to features vector before sending info to socket handler
-	feat = kzalloc(sizeof(*feat), GFP_KERNEL);
-	feat->features = f->features;
-	feat->pid = f->id;
-	feat->bin = f->bin;
-	// queue a socket work, 
-	INIT_WORK(&feat->work, tcp_sendf_waitr);
-	queue_work(tcp_q, &feat->work);
-	kfree(f);
 }
 
 
 static void feat_updater(struct work_struct *w){
 	if(f_list_updater())
 		pr_err("Updater failed to update\n");
+	pr_info("Update\n");
 	//queue_delayed_work(ft_q, &ft_work, onesec/2);
 }
 
@@ -80,10 +83,10 @@ int init_module(void)
 
 void cleanup_module(void)
 {
+	destroy_workqueue(tcp_q);
 	cancel_delayed_work_sync(&proc_work);
 	cancel_delayed_work_sync(&ft_work);
-        destroy_workqueue(proc_q);
-        destroy_workqueue(tcp_q);
+        destroy_workqueue(proc_q);        
         destroy_workqueue(ft_q);
         tcp_client_disconnect();
 	pfile_cleanup();		
@@ -92,7 +95,8 @@ void cleanup_module(void)
 
 void add_work_queue(void){
 	queue_delayed_work(proc_q, &proc_work, onesec);
-	queue_delayed_work(ft_q, &ft_work, onesec/2);
+	queue_delayed_work(ft_q, &ft_work, onesec/5);
+	pr_info("Add in queue\n");
 }
 
 

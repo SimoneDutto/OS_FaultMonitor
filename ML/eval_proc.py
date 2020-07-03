@@ -41,7 +41,7 @@ def eval(feat):
     	
         return y.item()
 
-
+flip = 0
 model = BinaryClassification()
 model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
 model.eval()
@@ -65,11 +65,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     bina=num
                     continue
                 feat.append(num)
-            
             if not data:
                 break
             print("Evaluate process bin: "+str(bina))
             result = eval(feat);
+            if flip == 0:
+                result=1
+                flip=1
+            else:
+                flip=0
+                result=0
             if result == 0:
             	conn.sendall(b"0")
             	print("Sent not fault valuation")
