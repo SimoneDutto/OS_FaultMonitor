@@ -4,6 +4,7 @@
 #include <linux/string.h>
 #include <linux/mutex.h>
 #include <linux/random.h>
+#include <linux/pmctrack.h>
 #include <asm/errno.h>
 
 #include "../include/f_list.h"
@@ -26,12 +27,18 @@ static LIST_HEAD(f_list);
 static unsigned int* get_randoms(unsigned int id){
 	int i = 0;
 	unsigned int *fts = NULL;
+	uint64_t value;
 	
 	fts = kzalloc(NUM*sizeof(unsigned int), GFP_KERNEL);
 	if(fts == NULL) return NULL;
 	
+	
 	for(i=0;i<NUM;i++){
-		get_random_bytes(&fts[i], sizeof(unsigned int));
+		//get_random_bytes(&fts[i], sizeof(unsigned int));		
+		pmcs_get_current_metric_value(get_pid_task(find_get_pid(id),PIDTYPE_PID),\
+		 				0, &value);
+		fts[i] = (unsigned int) value;
+		
 	}
 	
 	return fts;
