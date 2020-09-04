@@ -27,20 +27,26 @@ static LIST_HEAD(f_list);
 static unsigned int* get_randoms(unsigned int id){
 	int i = 0;
 	unsigned int *fts = NULL;
-	uint64_t value;
+	uint64_t value=0;
 	
 	fts = kzalloc(NUM*sizeof(unsigned int), GFP_KERNEL);
 	if(fts == NULL) return NULL;
 	
-	
+	//pmctrack_hwmon_export_device(NULL, 0, NULL);
 	for(i=0;i<NUM;i++){
-		//get_random_bytes(&fts[i], sizeof(unsigned int));		
-		pmcs_get_current_metric_value(get_pid_task(find_get_pid(id),PIDTYPE_PID),\
-		 				0, &value);
+		value = -1;
+		//get_random_bytes(&fts[i], sizeof(unsigned int));
+		struct task_struct* task = get_pid_task(find_get_pid(id), PIDTYPE_PID);
+		if(task == NULL){ 
+			pr_err("ERROR: task not found\n");
+			return NULL;
+		}
+		pmcs_get_current_metric_value(task, 0, &value);
+		if(value != -1)
+			pr_info("PMC value: %llu", value);
 		fts[i] = (unsigned int) value;
-		
 	}
-	
+
 	return fts;
 }
 

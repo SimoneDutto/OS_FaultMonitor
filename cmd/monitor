@@ -1,5 +1,5 @@
 #!/bin/bash
-# Command line utility to start a program and signal PID to kernel monitor
+# Command line utility to start a program and monitor it
 cmd=""
 i="0"
 
@@ -8,14 +8,14 @@ while getopts ":b:" opt; do
     b )
       target=$OPTARG
       if [ "$target" == "bitcount" ];then
-				bin=0
-			elif [ "$target" == "basicmath" ];then
-				bin=1
-			elif [ "$target" =="qsort" ];then
-				bin=2
-			else
-				bin=-1
-			fi
+			bin=0
+		elif [ "$target" == "basicmath" ];then
+			bin=1
+		elif [ "$target" =="qsort" ];then
+			bin=2
+		else
+			bin=-1
+		fi
       ;;
     \? )
       echo "Invalid option: $OPTARG" 1>&2
@@ -39,8 +39,11 @@ do
      
 done
 echo "comando lanciato $cmd"
-nohup $cmd &
-pid=$!
-echo $pid
-echo "monitor lanciato"
-echo "$pid $bin" > /proc/monitor
+
+conf="instr_retired,unhalted_ref_cycles_fixed,cycles,instr,llc_references,llc_misses,branch_instr_retired"
+nohup pmctrack -T 1 -c $conf $cmd > $cmd.out
+python3 /home/sgundo/Desktop/Tesi/OS_FaultMonitor/ML/eval_proc.py $cmd $target
+# pid=$!
+# echo $pid
+# echo "monitor lanciato"
+#echo "$pid $bin" > /proc/monitor

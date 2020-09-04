@@ -15,6 +15,7 @@
 MODULE_AUTHOR("Simone Dutto");
 MODULE_DESCRIPTION("module to evaluate faulty proc");
 MODULE_LICENSE("GPL");
+MODULE_SOFTDEP("pre: mchw_intel_core");
 
 static void proc_eval_handler(struct work_struct *w);
 static void feat_updater(struct work_struct *w);
