@@ -39,9 +39,8 @@ do
      
 done
 echo "comando lanciato $cmd"
-
 conf="instr_retired,unhalted_ref_cycles_fixed,cycles,instr,llc_references,llc_misses,branch_instr_retired"
-nohup pmctrack -T 1 -c $conf $cmd > $cmd.out
+pmctrack -o $cmd.out -T 1 -c $conf $cmd
 python3 /home/sgundo/Desktop/Tesi/OS_FaultMonitor/ML/eval_proc.py $cmd $target
 # pid=$!
 # echo $pid

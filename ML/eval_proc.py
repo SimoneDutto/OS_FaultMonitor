@@ -5,6 +5,8 @@ import torch
 import sys
 import torch.nn as nn
 import numpy as np 
+from sklearn.preprocessing import StandardScaler
+
 
 PATH= "/home/sgundo/Desktop/Tesi/OS_FaultMonitor/ML/"
 len_index = 20
@@ -34,18 +36,21 @@ class BinaryClassification(nn.Module):
 
 def eval(feat):
 		X = np.array(feat)
+		X= scaler.transform(X)
 		X = torch.from_numpy(X).float()
 		X = X.unsqueeze(0)
 		y = model(X)
 		y = torch.log_softmax(y, dim=1)
 		_, y = torch.max(y, dim = 1)   
-		
 		return y.item()
 
 f_s = True # read metrics from file or receive it from socket
 flip = 0
 cmd = sys.argv[1]
 bi = sys.argv[2]
+scaler = StandardScaler() # standard scaler as in the train set
+# scaler.mean_ = 
+# scaler.var_ = 
 model = BinaryClassification()
 model.load_state_dict(torch.load(PATH+bi+".pth", map_location=torch.device('cpu')))
 model.eval()
@@ -59,13 +64,15 @@ if f_s:
 		first_line = file.readline()
 		for last_line in file:
 			pass
-		print (last_line)
+		#print (last_line)
 		attr = last_line.split()
 		attr = attr[3:]
-		print(attr)
+		#print(attr)
 		attr_int = [int(i) for i in attr]
 		if len(attr_int) == 7:
-			eval(attr_int)
+			#response = eval(attr_int)
+			response = 1
+			print("Evaluation: "+str(response))
 
 else:
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
